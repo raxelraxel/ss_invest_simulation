@@ -72,14 +72,56 @@
     color: #666;
     margin-bottom: 12px;
   }
+  .section-header {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #333;
+  }
+  #outputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .output-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+  }
+  .output-field label {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #444;
+  }
+  .output-field input {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #f5f5f5;
+    color: #333;
+  }
 </style>
 </head>
 <body>
 
 <h1>How much cash does a household need to invest to make up for lost benefits from Social Security Reform?</h1>
 
+<h2 class="section-header">Inputs</h2>
 <div id="controls"></div>
+
+<h2 class="section-header">Outputs</h2>
+<div id="outputs"></div>
+
 <div id="status"></div>
+
+<div class="chart-container">
 
 <div class="chart-container">
   <div id="chart1" style="width:100%; height:450px;"></div>
@@ -127,6 +169,14 @@ const FACET_LABELS = {
 
 const FACET_ORDER = ["tips", "corporate", "largecap"];
 
+const OUTPUT_FIELDS = {
+  annual_earnings: "Household monthly earnings",
+  ame_total: "Household annual earnings",
+  base_total: "Original Social Security monthly benefits",
+  benefit_total: "New Social Security monthly benefits",
+  gap_npv: "Gap in net present value of lifetime benefits"
+};
+
 
 let rawData = [];
 let scenarioColors = {};
@@ -152,6 +202,43 @@ fetch("ss_sim_data.json")
 // Holds the sorted distinct values for each slider field, so slider index -> real value
 const sliderValues = {};
 
+function buildOutputFields() {
+  const container = document.getElementById("outputs");
+  container.innerHTML = "";
+
+  Object.keys(OUTPUT_FIELDS).forEach(field => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "output-field";
+
+    const label = document.createElement("label");
+    label.textContent = OUTPUT_FIELDS[field];
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = `output-${field}`;
+    input.readOnly = true;
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(input);
+    container.appendChild(wrapper);
+  });
+}
+
+function updateOutputFields(filteredData) {
+  if (filteredData.length === 0) {
+    Object.keys(OUTPUT_FIELDS).forEach(field => {
+      document.getElementById(`output-${field}`).value = "—";
+    });
+    return;
+  }
+
+  const row = filteredData[0];
+  Object.keys(OUTPUT_FIELDS).forEach(field => {
+    const val = row[field];
+    document.getElementById(`output-${field}`).value =
+      typeof val === "number" ? val.toLocaleString() : val;
+  });
+}
 // ---- Build controls: dropdowns for DROPDOWN_FIELDS, snapping sliders for SLIDER_FIELDS ----
 function buildControls(data) {
   const container = document.getElementById("controls");
@@ -236,6 +323,8 @@ function buildControls(data) {
 
   // Set initial greyed-out state for sp_gender/sp_ame based on married's starting value
   updateSpGenderState();
+
+  buildOutputFields();
 }
 
 // sp_gender and sp_ame are null in the data whenever married == "no", so grey out (disable)
@@ -281,6 +370,8 @@ function renderAll() {
 
   //document.getElementById("status").textContent =
   //  `${filtered.length.toLocaleString()} rows match current filters`;
+
+  updateOutputFields(filtered);
 
   buildFacetedLineChart(filtered, "money", "Monthly investment", "chart1");
   buildFacetedLineChart(filtered, "pct", "% of Monthly Earnings", "chart2");
