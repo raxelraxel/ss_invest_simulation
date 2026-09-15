@@ -112,7 +112,7 @@ const DEFAULT_VALUES = {
 const FIELD_LABELS = {
   ame: "Monthly earnings",
   gender: "Gender",
-  married: "Marital status",
+  married: "Married",
   sp_gender: "Spouse gender",
   sp_ame: "Spouse monthly earnings",
   retire_age: "Retirement age",
@@ -279,8 +279,8 @@ function getFilteredData() {
 function renderAll() {
   const filtered = getFilteredData();
 
-  document.getElementById("status").textContent =
-    `${filtered.length.toLocaleString()} rows match current filters`;
+  //document.getElementById("status").textContent =
+  //  `${filtered.length.toLocaleString()} rows match current filters`;
 
   buildFacetedLineChart(filtered, "money", "Monthly investment", "chart1");
   buildFacetedLineChart(filtered, "pct", "% of Monthly Earnings", "chart2");
@@ -330,7 +330,7 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
     layoutAxes[`xaxis${i === 0 ? "" : i + 1}`] = {
       domain: [start, start + width],
       anchor: yKey,
-      title: ""
+      title: { text: "Age at Reform" }
     };
     layoutAxes[`yaxis${i === 0 ? "" : i + 1}`] = {
       anchor: xKey,
