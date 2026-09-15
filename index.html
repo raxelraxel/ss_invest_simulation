@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scenario Explorer</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 24px;
+    background: #fafafa;
+    color: #1a1a1a;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 16px 0;
+  }
+  #controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .control {
+    display: flex;
+    flex-direction: column;
+    min-width: 140px;
+  }
+  .control label {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #444;
+  }
+  .control select {
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .control select:disabled {
+    background: #eee;
+    color: #999;
+    cursor: not-allowed;
+  }
+  .control input[type="range"] {
+    width: 160px;
+  }
+  .control input[type="range"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .control .slider-value {
+    font-size: 12px;
+    color: #333;
+    margin-top: 2px;
+  }
+  .chart-container {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 24px;
+  }
+  #status {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>How much cash does a household need to invest to make up for lost benefits from Social Security Reform?</h1>
+
+<div id="controls"></div>
+<div id="status"></div>
+
+<div class="chart-container">
+  <div id="chart1" style="width:100%; height:450px;"></div>
+</div>
+
+<div class="chart-container">
+  <div id="chart2" style="width:100%; height:450px;"></div>
+</div>
+
+<script>
+
+// ---- Configuration ----
+// Fields shown as dropdowns
+const DROPDOWN_FIELDS = ["gender", "married", "sp_gender", "retire_age", "discount"];
+// Fields shown as sliders that snap to each field's actual distinct values (no intermediate values)
+const SLIDER_FIELDS = ["ame", "sp_ame"];
+// Default selected value for each field on page load.
+// Fill this in with your actual defaults, e.g. gender: "male".
+// Any field left out (or left blank) falls back to the first sorted value for that field.
+const DEFAULT_VALUES = {
+  gender: "male",
+  married: "yes",
+  sp_gender: "female",
+  retire_age: 65,
+  discount: 0.07,
+  ame: 11669,
+  sp_ame: 2669
+};
+
+const FIELD_LABELS = {
+  ame: "Monthly earnings",
+  gender: "Gender",
+  married: "Marital status",
+  sp_gender: "Spouse gender",
+  sp_ame: "Spouse monthly earnings",
+  retire_age: "Retirement age",
+  discount: "Discount rate"
+};
+
+const FACET_LABELS = {
+  corporate: "Corporate Bonds",
+  largecap: "Large Cap U.S. Stocks",
+  tips: "Treasury Inflation-Protected Securities (TIPS)"
+};
+
+const FACET_ORDER = ["tips", "corporate", "largecap"];
+
+
+let rawData = [];
+let scenarioColors = {};
+const palette = [
+  "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+  "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"
+];
+
+// ---- Load data ----
+fetch("ss_sim_data.json")
+  .then(res => res.json())
+  .then(data => {
+    rawData = data;
+    buildControls(rawData);
+    renderAll();
+  })
+  .catch(err => {
+    document.getElementById("status").textContent =
+      "Could not load ss_sim_data.json — check that it's in the same folder as this file.";
+    console.error(err);
+  });
+
+// Holds the sorted distinct values for each slider field, so slider index -> real value
+const sliderValues = {};
+
+// ---- Build controls: dropdowns for DROPDOWN_FIELDS, snapping sliders for SLIDER_FIELDS ----
+function buildControls(data) {
+  const container = document.getElementById("controls");
+  container.innerHTML = "";
+
+  DROPDOWN_FIELDS.forEach(field => {
+    const values = [...new Set(data.map(d => d[field]))]
+      .filter(v => v !== null && v !== undefined)
+      .sort((a, b) => (typeof a === "number" ? a - b : String(a).localeCompare(String(b))));
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "control";
+
+    const label = document.createElement("label");
+    label.textContent = FIELD_LABELS[field] || field;;
+    label.setAttribute("for", `filter-${field}`);
+
+    const select = document.createElement("select");
+    select.id = `filter-${field}`;
+
+    values.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+
+    // Select the configured default if it exists among this field's values, else the first value
+    const defaultVal = DEFAULT_VALUES.hasOwnProperty(field) ? DEFAULT_VALUES[field] : values[0];
+    const matchIndex = values.findIndex(v => String(v) === String(defaultVal));
+    select.selectedIndex = matchIndex >= 0 ? matchIndex : 0;
+
+    select.addEventListener("change", () => {
+      if (field === "married") updateSpGenderState();
+      renderAll();
+    });
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(select);
+    container.appendChild(wrapper);
+  });
+
+  SLIDER_FIELDS.forEach(field => {
+    const values = [...new Set(data.map(d => d[field]))]
+      .filter(v => v !== null && v !== undefined)
+      .sort((a, b) => a - b);
+    sliderValues[field] = values;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "control";
+
+    const label = document.createElement("label");
+    label.textContent = FIELD_LABELS[field] || field;;
+    label.setAttribute("for", `filter-${field}`);
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.id = `filter-${field}`;
+    slider.min = 0;
+    slider.max = values.length - 1;
+    slider.step = 1;
+
+    const defaultVal = DEFAULT_VALUES.hasOwnProperty(field) ? DEFAULT_VALUES[field] : values[0];
+    const matchIndex = values.findIndex(v => v === defaultVal);
+    slider.value = matchIndex >= 0 ? matchIndex : 0;
+
+    const valueDisplay = document.createElement("div");
+    valueDisplay.className = "slider-value";
+    valueDisplay.id = `filter-${field}-value`;
+    valueDisplay.textContent = values[slider.value];
+
+    slider.addEventListener("input", () => {
+      valueDisplay.textContent = sliderValues[field][slider.value];
+      renderAll();
+    });
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(slider);
+    wrapper.appendChild(valueDisplay);
+    container.appendChild(wrapper);
+  });
+
+  // Set initial greyed-out state for sp_gender/sp_ame based on married's starting value
+  updateSpGenderState();
+}
+
+// sp_gender and sp_ame are null in the data whenever married == "no", so grey out (disable)
+// both controls and stop filtering on them in that case.
+function updateSpGenderState() {
+  const marriedSelect = document.getElementById("filter-married");
+  const spGenderSelect = document.getElementById("filter-sp_gender");
+  const spAmeSlider = document.getElementById("filter-sp_ame");
+  if (!marriedSelect || !spGenderSelect || !spAmeSlider) return;
+
+  const isUnmarried = marriedSelect.value === "no";
+  spGenderSelect.disabled = isUnmarried;
+  spAmeSlider.disabled = isUnmarried;
+}
+
+// ---- Read current control selections and filter the data ----
+function getFilteredData() {
+  let filtered = rawData;
+
+  DROPDOWN_FIELDS.forEach(field => {
+    if (field === "sp_gender" && document.getElementById("filter-married").value === "no") {
+      return; // sp_gender is null when unmarried; don't filter on it
+    }
+    const select = document.getElementById(`filter-${field}`);
+    filtered = filtered.filter(d => String(d[field]) === String(select.value));
+  });
+
+  SLIDER_FIELDS.forEach(field => {
+    if (field === "sp_ame" && document.getElementById("filter-married").value === "no") {
+      return; // sp_ame is null when unmarried; don't filter on it
+    }
+    const slider = document.getElementById(`filter-${field}`);
+    const selectedValue = sliderValues[field][slider.value];
+    filtered = filtered.filter(d => d[field] === selectedValue);
+  });
+
+  return filtered;
+}
+
+// ---- Redraw both charts based on current filters ----
+function renderAll() {
+  const filtered = getFilteredData();
+
+  document.getElementById("status").textContent =
+    `${filtered.length.toLocaleString()} rows match current filters`;
+
+  buildFacetedLineChart(filtered, "money", "Monthly investment", "chart1");
+  buildFacetedLineChart(filtered, "pct", "% of Monthly Earnings", "chart2");
+}
+
+function assignScenarioColors(data) {
+  const scenarios = [...new Set(data.map(d => d.scenario_name))];
+  scenarios.forEach((s, i) => {
+    if (!(s in scenarioColors)) scenarioColors[s] = palette[i % palette.length];
+  });
+}
+
+// Faceted line chart (one subplot per `investment` value),
+// equivalent to ggplot's geom_line + facet_wrap(~investment)
+function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
+  if (data.length === 0) {
+    Plotly.newPlot(containerId, [], { title: "No data matches current filters" });
+    return;
+  }
+
+  assignScenarioColors(data);
+
+  const facets = [...new Set(data.map(d => d.investment))]
+  .sort((a, b) => FACET_ORDER.indexOf(a) - FACET_ORDER.indexOf(b));
+  const scenarios = [...new Set(data.map(d => d.scenario_name))].sort();
+
+  const nCols = facets.length;
+  const traces = [];
+  const annotations = [];
+  const layoutAxes = {};
+
+  // Compute a shared y-range (with padding) across all facets so tick marks line up
+  const allYValues = data.map(d => d[yField]).filter(v => v !== null && v !== undefined && !isNaN(v));
+  const yMin = Math.min(...allYValues);
+  const yMax = Math.max(...allYValues);
+  const yPad = (yMax - yMin) * 0.05 || Math.abs(yMax) * 0.05 || 1;
+  const sharedYRange = [yMin - yPad, yMax + yPad];
+
+  facets.forEach((facet, i) => {
+    const xKey = i === 0 ? "x" : `x${i + 1}`;
+    const yKey = i === 0 ? "y" : `y${i + 1}`;
+
+    const gutter = 0.04;
+    const width = (1 - gutter * (nCols - 1)) / nCols;
+    const start = i * (width + gutter);
+
+    layoutAxes[`xaxis${i === 0 ? "" : i + 1}`] = {
+      domain: [start, start + width],
+      anchor: yKey,
+      title: ""
+    };
+    layoutAxes[`yaxis${i === 0 ? "" : i + 1}`] = {
+      anchor: xKey,
+      title: i === 0 ? { text: yAxisTitle } : "",
+      range: sharedYRange,
+      nticks: 6,
+      matches: i === 0 ? undefined : "y" // lock every facet's ticks to the first facet's
+    };
+
+    annotations.push({
+      text: FACET_LABELS[facet] || facet,
+      showarrow: false,
+      x: start + width / 2,
+      y: 1.05,
+      xref: "paper",
+      yref: "paper",
+      xanchor: "center",
+      font: { size: 13 }
+    });
+
+    scenarios.forEach(scenario => {
+      const subset = data
+        .filter(d => d.investment === facet && d.scenario_name === scenario)
+        .sort((a, b) => a.age - b.age);
+
+      traces.push({
+        x: subset.map(d => d.age),
+        y: subset.map(d => d[yField]),
+        type: "scatter",
+        mode: "lines",
+        name: scenario,
+        legendgroup: scenario,
+        showlegend: i === 0,
+        line: { color: scenarioColors[scenario] },
+        xaxis: xKey,
+        yaxis: yKey,
+        hovertemplate:
+          yField === "money"
+            ? "Monthly investment of $%{y:,.0f}<extra></extra>"
+            : "%{y:.1f}% of Monthly Earnings<extra></extra>"
+      });
+    });
+  });
+
+  const layout = {
+    ...layoutAxes,
+    annotations,
+    legend: {
+      orientation: "h",
+      x: 0.5,
+      xanchor: "center",
+      y: -0.2
+    },
+    margin: { t: 50, b: 80 },
+    showlegend: true
+  };
+
+  Plotly.newPlot(containerId, traces, layout, { responsive: true });
+}
+
+</script>
+
+</body>
+</html>
