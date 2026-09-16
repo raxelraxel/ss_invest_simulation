@@ -169,14 +169,15 @@ const FACET_LABELS = {
 const FACET_ORDER = ["tips", "corporate", "largecap"];
 
 const OUTPUT_FIELDS = {
-  annual_earnings: "Household monthly earnings",
-  ame_total: "Household annual earnings",
+  annual_earnings: "Household annual earnings",
+  ame_total: "Household monthly earnings",
+  cps_pct: "Income percentile",
   base_total: "Original Social Security monthly benefits",
   benefit_total: "New Social Security monthly benefits",
   gap_npv: "Gap in net present value of lifetime benefits"
 };
 
-const OUTPUTS_IN_SLIDER_ROW=["ame_total", "annual_earnings"]
+const OUTPUTS_IN_SLIDER_ROW=["ame_total", "annual_earnings","cps_pct"]
 let rawData = [];
 let scenarioColors = {};
 const palette = [
@@ -237,6 +238,16 @@ function updateOutputFields(filteredData) {
   const row = filteredData[0];
   Object.keys(OUTPUT_FIELDS).forEach(field => {
     const val = row[field];
+    let displayVal;
+
+    if (field === "cps_pct") {
+      displayVal = `${Math.round(val * 100)}%`;
+    } else if (typeof val === "number") {
+      displayVal = val.toLocaleString();
+    } else {
+      displayVal = val;
+    }
+
     document.getElementById(`output-${field}`).value =
       typeof val === "number" ? val.toLocaleString() : val;
   });
