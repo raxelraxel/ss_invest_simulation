@@ -16,7 +16,7 @@
     font-size: 20px;
     margin: 0 0 16px 0;
   }
-  #controls {
+  .control-row {
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
@@ -114,7 +114,8 @@
 <h1>How much cash does a household need to invest to make up for lost benefits from Social Security Reform?</h1>
 
 <h2 class="section-header">Inputs</h2>
-<div id="controls"></div>
+<div id="dropdown-row" class="control-row">
+  <div id="slider-row" class="control-row"</div>
 
 <h2 class="section-header">Outputs</h2>
 <div id="outputs"></div>
@@ -175,7 +176,7 @@ const OUTPUT_FIELDS = {
   gap_npv: "Gap in net present value of lifetime benefits"
 };
 
-
+const OUTPUTS_IN_SLIDER_ROW=["ame_total", "annual_earnings"]
 let rawData = [];
 let scenarioColors = {};
 const palette = [
@@ -202,7 +203,8 @@ const sliderValues = {};
 
 function buildOutputFields() {
   const container = document.getElementById("outputs");
-  container.innerHTML = "";
+  const sliderRow=document.getElementyId("slider-row");
+  outputsContainer.innerHTML = "";
 
   Object.keys(OUTPUT_FIELDS).forEach(field => {
     const wrapper = document.createElement("div");
@@ -218,7 +220,9 @@ function buildOutputFields() {
 
     wrapper.appendChild(label);
     wrapper.appendChild(input);
-    container.appendChild(wrapper);
+
+    const target = OUTPUTS_IN_SLIDER_ROW.includes(field) ? sliderRow : outputsContainer;
+    target.appendChild(wrapper);
   });
 }
 
@@ -239,8 +243,10 @@ function updateOutputFields(filteredData) {
 }
 // ---- Build controls: dropdowns for DROPDOWN_FIELDS, snapping sliders for SLIDER_FIELDS ----
 function buildControls(data) {
-  const container = document.getElementById("controls");
-  container.innerHTML = "";
+  const dropdownRow = document.getElementById("dropdown-row");
+  const sliderRow=document.getElementById("slider-row");
+  dropdownRow.innerHTML = "";
+  sliderRow.innerHTML="";
 
   DROPDOWN_FIELDS.forEach(field => {
     const values = [...new Set(data.map(d => d[field]))]
@@ -276,7 +282,7 @@ function buildControls(data) {
 
     wrapper.appendChild(label);
     wrapper.appendChild(select);
-    container.appendChild(wrapper);
+    dropdownRow.appendChild(wrapper);
   });
 
   SLIDER_FIELDS.forEach(field => {
@@ -316,12 +322,11 @@ function buildControls(data) {
     wrapper.appendChild(label);
     wrapper.appendChild(slider);
     wrapper.appendChild(valueDisplay);
-    container.appendChild(wrapper);
+    sliderRow.appendChild(wrapper);
   });
 
   // Set initial greyed-out state for sp_gender/sp_ame based on married's starting value
   updateSpGenderState();
-
   buildOutputFields();
 }
 
