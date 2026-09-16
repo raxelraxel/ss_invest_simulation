@@ -248,10 +248,10 @@ function updateOutputFields(filteredData) {
       displayVal = val;
     }
 
-    document.getElementById(`output-${field}`).value =
-      typeof val === "number" ? val.toLocaleString() : val;
+    document.getElementById(`output-${field}`).value = displayVal;
   });
 }
+
 // ---- Build controls: dropdowns for DROPDOWN_FIELDS, snapping sliders for SLIDER_FIELDS ----
 function buildControls(data) {
   const dropdownRow = document.getElementById("dropdown-row");
