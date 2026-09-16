@@ -202,8 +202,8 @@ fetch("ss_sim_data.json")
 const sliderValues = {};
 
 function buildOutputFields() {
-  const container = document.getElementById("outputs");
-  const sliderRow=document.getElementyId("slider-row");
+  const outputsContainer = document.getElementById("outputs");
+  const sliderRow=document.getElementById("slider-row");
   outputsContainer.innerHTML = "";
 
   Object.keys(OUTPUT_FIELDS).forEach(field => {
