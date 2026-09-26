@@ -156,21 +156,21 @@
 // Fields shown as dropdowns
 const DROPDOWN_FIELDS = ["married","retire_age"];
 // Fields shown as sliders that snap to each field's actual distinct values (no intermediate values)
-const SLIDER_FIELDS = ["ame", "sp_ame"];
+const SLIDER_FIELDS = ["annual_earnings", "sp_annual_earnings"];
 // Default selected value for each field on page load.
 // Fill this in with your actual defaults, e.g. gender: "male".
 // Any field left out (or left blank) falls back to the first sorted value for that field.
 const DEFAULT_VALUES = {
   married: "yes",
   retire_age: 65,
-  ame: 11669,
-  sp_ame: 2669
+  annual_earnings: 140029.5,
+  sp_annual_earnings: 140029.5
 };
 
 const FIELD_LABELS = {
-  ame: "Monthly earnings",
+  annual_earnings: "Annual earnings",
   married: "Married",
-  sp_ame: "Spouse monthly earnings",
+  sp_annual_earnings: "Spouse annual earnings",
   retire_age: "Retirement age",
 };
 
@@ -337,10 +337,10 @@ function buildControls(data) {
     const valueDisplay = document.createElement("div");
     valueDisplay.className = "slider-value";
     valueDisplay.id = `filter-${field}-value`;
-    valueDisplay.textContent = values[slider.value];
+    valueDisplay.textContent = values[slider.value].toLocaleString();
 
     slider.addEventListener("input", () => {
-      valueDisplay.textContent = sliderValues[field][slider.value];
+      valueDisplay.textContent = "$" + sliderValues[field][slider.value].toLocaleString();
       renderAll();
     });
 
@@ -359,7 +359,6 @@ function buildControls(data) {
 // both controls and stop filtering on them in that case.
 function updateSpGenderState() {
   const marriedSelect = document.getElementById("filter-married");
-  const spGenderSelect = document.getElementById("filter-sp_gender");
   const spAmeSlider = document.getElementById("filter-sp_ame");
   if (!marriedSelect || !spGenderSelect || !spAmeSlider) return;
 
@@ -381,8 +380,8 @@ function getFilteredData() {
   });
 
   SLIDER_FIELDS.forEach(field => {
-    if (field === "sp_ame" && document.getElementById("filter-married").value === "no") {
-      return; // sp_ame is null when unmarried; don't filter on it
+    if (field === "sp_annual_earnings" && document.getElementById("filter-married").value === "no") {
+      return; // sp_annual_earnings is null when unmarried; don't filter on it
     }
     const slider = document.getElementById(`filter-${field}`);
     const selectedValue = sliderValues[field][slider.value];

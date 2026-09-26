@@ -141,11 +141,11 @@ const SLIDER_FIELDS = ["ame", "sp_ame"];
 // Fill this in with your actual defaults, e.g. gender: "male".
 // Any field left out (or left blank) falls back to the first sorted value for that field.
 const DEFAULT_VALUES = {
-  gender: "male",
+  gender: "Male",
   married: "yes",
-  sp_gender: "female",
+  sp_gender: "Female",
   retire_age: 65,
-  discount: 0.07,
+  discount: 0.05,
   ame: 11669,
   sp_ame: 2669
 };
@@ -323,10 +323,10 @@ function buildControls(data) {
     const valueDisplay = document.createElement("div");
     valueDisplay.className = "slider-value";
     valueDisplay.id = `filter-${field}-value`;
-    valueDisplay.textContent = values[slider.value];
+    valueDisplay.textContent = values[slider.value].toLocaleString();
 
     slider.addEventListener("input", () => {
-      valueDisplay.textContent = sliderValues[field][slider.value];
+      valueDisplay.textContent = "$" + sliderValues[field][slider.value].toLocaleString();
       renderAll();
     });
 
