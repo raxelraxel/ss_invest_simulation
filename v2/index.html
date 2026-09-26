@@ -183,7 +183,7 @@ const FACET_LABELS = {
 const FACET_ORDER = ["tips", "corporate", "largecap"];
 
 const OUTPUT_FIELDS = {
-  annual_earnings: "Household annual earnings",
+  annual_earnings_total: "Household annual earnings",
   ame_total: "Household monthly earnings",
   cps_pct: "Income percentile",
   base_total: "Original Social Security monthly benefits",
@@ -191,7 +191,7 @@ const OUTPUT_FIELDS = {
   gap_npv: "Gap in net present value of lifetime benefits"
 };
 
-const OUTPUTS_IN_SLIDER_ROW=["ame_total", "annual_earnings","cps_pct"]
+const OUTPUTS_IN_SLIDER_ROW=["ame_total", "annual_earnings_total","cps_pct"]
 let rawData = [];
 let scenarioColors = {};
 const palette = [
@@ -257,7 +257,7 @@ function updateOutputFields(filteredData) {
     const val = row[field];
     let displayVal;
 
-    if (field === "annual_earnings" && val >= HOUSEHOLD_EARNINGS_CAP) {
+    if (field === "annual_earnings_total" && val >= HOUSEHOLD_EARNINGS_CAP) {
       displayVal = "Over $250,000";
     } else if (field === "cps_pct") {
       displayVal = `${Math.round(val * 100)}%`;
@@ -364,11 +364,11 @@ function buildControls(data) {
 // both controls and stop filtering on them in that case.
 function updateSpGenderState() {
   const marriedSelect = document.getElementById("filter-married");
-  const spAmeSlider = document.getElementById("filter-sp_ame");
-  if (!marriedSelect || !spAmeSlider) return;
+  const spEarningsSlider = document.getElementById("filter-sp_annual_earnings");
+  if (!marriedSelect || !spEarningsSlider) return;
 
   const isUnmarried = marriedSelect.value === "no";
-  spAmeSlider.disabled = isUnmarried;
+  spEarningsSlider.disabled = isUnmarried;
 }
 
 // ---- Read current control selections and filter the data ----
