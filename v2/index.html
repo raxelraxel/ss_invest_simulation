@@ -216,6 +216,9 @@ fetch("ss_sim_data_v2.json")
 // Holds the sorted distinct values for each slider field, so slider index -> real value
 const sliderValues = {};
 
+//Max value for household earnings, this will be changed to read "Over $250,000"
+const HOUSEHOLD_EARNINGS_CAP = 251559;
+
 function buildOutputFields() {
   const outputsContainer = document.getElementById("outputs");
   const sliderRow=document.getElementById("slider-row");
@@ -254,7 +257,9 @@ function updateOutputFields(filteredData) {
     const val = row[field];
     let displayVal;
 
-    if (field === "cps_pct") {
+    if (field === "annual_earnings" && val >= HOUSEHOLD_EARNINGS_CAP) {
+      displayVal = "Over $250,000";
+    } else if (field === "cps_pct") {
       displayVal = `${Math.round(val * 100)}%`;
     } else if (typeof val === "number") {
       displayVal = val.toLocaleString();
