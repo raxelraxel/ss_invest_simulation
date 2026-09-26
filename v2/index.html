@@ -107,6 +107,17 @@
     background: #f5f5f5;
     color: #333;
   }
+  .input-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .input-groups .control-row {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 300px;
+  }
 </style>
 </head>
 <body>
@@ -114,9 +125,11 @@
 <h1>How much cash does a household need to invest to make up for lost benefits from Social Security Reform?</h1>
 
 <h2 class="section-header">Inputs</h2>
-<div id="dropdown-row" class="control-row"></div>
-<div id="slider-row" class="control-row"></div>
-
+<!-- Note: input-groups puts these two inputs on same line as they are simplified from prior version; remove the class input-groups wrapper to make separate lines.-->
+<div class="input-groups">
+  <div id="dropdown-row" class="control-row"></div>
+  <div id="slider-row" class="control-row"></div>
+</div>
 <h2 class="section-header">Outputs</h2>
 <div id="outputs"></div>
 
