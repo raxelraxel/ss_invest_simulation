@@ -185,6 +185,9 @@ const FACET_LABELS = {
 };
 
 const FACET_ORDER = ["tips", "corporate", "largecap"];
+const FACET_ORDER2 = ["Benefits for 75th-89th pctile unchanged, 90th pctile and above reduced by 5%",
+                       "Benefits for 75th-89th pctile reduced by 2%, 90th pctile and above reduced by 7%",
+                       Benefits for 75th-89th pctile reduced by 5%, 90th pctile and above reduced by 10%"];
 
 const OUTPUT_FIELDS = {
   annual_earnings_total: "Household annual earnings",
@@ -235,6 +238,7 @@ function buildOutputFields() {
     const label = document.createElement("label");
     label.textContent = OUTPUT_FIELDS[field];
 
+    const input = document.createElement("input");
     const input = document.createElement("input");
     input.type = "text";
     input.id = `output-${field}`;
@@ -531,7 +535,7 @@ function buildFacetedLineChart2(data, yField, yAxisTitle, containerId) {
   assignScenarioColors(data);
 
   const facets = [...new Set(data.map(d => d.scenario_name))]
-  .sort((a, b) => FACET_ORDER.indexOf(a) - FACET_ORDER.indexOf(b));
+  .sort((a, b) => FACET_ORDER2.indexOf(a) - FACET_ORDER2.indexOf(b));
   const scenarios = [...new Set(data.map(d => d.investment))].sort();
 
   const nCols = facets.length;
