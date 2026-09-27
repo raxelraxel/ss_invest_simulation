@@ -406,43 +406,45 @@ function getFilteredData() {
 function renderAll() {
   const filtered = getFilteredData();
 
-  //document.getElementById("status").textContent =
-  //  `${filtered.length.toLocaleString()} rows match current filters`;
-
   updateOutputFields(filtered);
 
-  buildFacetedLineChart(filtered, "money", "Monthly investment", "chart1","Monthly Investment to Make Up for Lost Benefits");
-  buildFacetedLineChart(filtered, "pct", "% of Monthly Earnings", "chart2","Percent of Monthly Income to Make Up for Lost Benefits");
-  buildFacetedLineChart2(filtered, "money", "Monthly investment", "chart3","Monthly Investment to Make Up for Lost Benefits");
+  buildFacetedChart(filtered, "money", "Monthly investment", "chart1", "Monthly Investment to Make Up for Lost Benefits", "investment", FACET_ORDER, "scenario_name", FACET_LABELS);
+  buildFacetedChart(filtered, "pct", "% of Monthly Earnings", "chart2", "Percent of Monthly Income to Make Up for Lost Benefits", "investment", FACET_ORDER, "scenario_name", FACET_LABELS);
+  buildFacetedChart(filtered, "money", "Monthly investment", "chart3", "Monthly Investment to Make Up for Lost Benefits", "scenario_name", FACET_ORDER2, "investment", FACET_LABELS);
 }
 
-function assignScenarioColors(data) {
-  const scenarios = [...new Set(data.map(d => d.scenario_name))];
-  scenarios.forEach((s, i) => {
-    if (!(s in scenarioColors)) scenarioColors[s] = palette[i % palette.length];
+  // Persistent color assignment per (field, value) pair, so colors stay stable
+// across re-renders even when the same function is reused for different fields.
+let colorAssignments = {};
+function assignLineColors(data, lineField) {
+  if (!colorAssignments[lineField]) colorAssignments[lineField] = {};
+  const map = colorAssignments[lineField];
+  const values = [...new Set(data.map(d => d[lineField]))];
+  values.forEach((v, i) => {
+    if (!(v in map)) map[v] = palette[i % palette.length];
   });
+  return map;
 }
 
-// Faceted line chart (one subplot per `investment` value),
-// equivalent to ggplot's geom_line + facet_wrap(~investment)
-function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
+// Generic faceted line chart: facetField determines the subplots,
+// lineField determines the separately colored lines within each subplot.
+function buildFacetedChart(data, yField, yAxisTitle, containerId, chartTitle, facetField, facetOrder, lineField, facetLabels = {}) {
   if (data.length === 0) {
     Plotly.newPlot(containerId, [], { title: "No data match current filters" });
     return;
   }
 
-  assignScenarioColors(data);
+  const lineColors = assignLineColors(data, lineField);
 
-  const facets = [...new Set(data.map(d => d.investment))]
-  .sort((a, b) => FACET_ORDER.indexOf(a) - FACET_ORDER.indexOf(b));
-  const scenarios = [...new Set(data.map(d => d.scenario_name))].sort();
+  const facets = [...new Set(data.map(d => d[facetField]))]
+    .sort((a, b) => facetOrder.indexOf(a) - facetOrder.indexOf(b));
+  const lineValues = [...new Set(data.map(d => d[lineField]))].sort();
 
   const nCols = facets.length;
   const traces = [];
   const annotations = [];
   const layoutAxes = {};
 
-  // Compute a shared y-range (with padding) across all facets so tick marks line up
   const allYValues = data.map(d => d[yField]).filter(v => v !== null && v !== undefined && !isNaN(v));
   const yMin = Math.min(...allYValues);
   const yMax = Math.max(...allYValues);
@@ -467,11 +469,11 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
       title: i === 0 ? { text: yAxisTitle } : "",
       range: sharedYRange,
       nticks: 6,
-      matches: i === 0 ? undefined : "y" // lock every facet's ticks to the first facet's
+      matches: i === 0 ? undefined : "y"
     };
 
     annotations.push({
-      text: FACET_LABELS[facet] || facet,
+      text: facetLabels[facet] || facet,
       showarrow: false,
       x: start + width / 2,
       y: 1.05,
@@ -481,9 +483,9 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
       font: { size: 13 }
     });
 
-    scenarios.forEach(scenario => {
+    lineValues.forEach(lineVal => {
       const subset = data
-        .filter(d => d.investment === facet && d.scenario_name === scenario)
+        .filter(d => d[facetField] === facet && d[lineField] === lineVal)
         .sort((a, b) => a.age - b.age);
 
       traces.push({
@@ -491,10 +493,10 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
         y: subset.map(d => d[yField]),
         type: "scatter",
         mode: "lines",
-        name: scenario,
-        legendgroup: scenario,
+        name: lineVal,
+        legendgroup: lineVal,
         showlegend: i === 0,
-        line: { color: scenarioColors[scenario] },
+        line: { color: lineColors[lineVal] },
         xaxis: xKey,
         yaxis: yKey,
         hovertemplate:
@@ -515,113 +517,12 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
       xanchor: "center",
       y: -0.2
     },
-    margin: { t: 50, b: 80 },
+    margin: { t: 80, b: 80 },
     showlegend: true
   };
 
   Plotly.newPlot(containerId, traces, layout, { responsive: true });
 }
-
-
-
-// Faceted line chart (one subplot per `investment` value),
-// equivalent to ggplot's geom_line + facet_wrap(~investment)
-function buildFacetedLineChart2(data, yField, yAxisTitle, containerId,chartTitle) {
-  if (data.length === 0) {
-    Plotly.newPlot(containerId, [], { title: "No data match current filters" });
-    return;
-  }
-
-  assignScenarioColors(data);
-
-  const facets = [...new Set(data.map(d => d.scenario_name))]
-  .sort((a, b) => FACET_ORDER2.indexOf(a) - FACET_ORDER2.indexOf(b));
-  const scenarios = [...new Set(data.map(d => d.investment))].sort();
-
-  const nCols = facets.length;
-  const traces = [];
-  const annotations = [];
-  const layoutAxes = {};
-
-  // Compute a shared y-range (with padding) across all facets so tick marks line up
-  const allYValues = data.map(d => d[yField]).filter(v => v !== null && v !== undefined && !isNaN(v));
-  const yMin = Math.min(...allYValues);
-  const yMax = Math.max(...allYValues);
-  const yPad = (yMax - yMin) * 0.05 || Math.abs(yMax) * 0.05 || 1;
-  const sharedYRange = [yMin - yPad, yMax + yPad];
-
-  facets.forEach((facet, i) => {
-    const xKey = i === 0 ? "x" : `x${i + 1}`;
-    const yKey = i === 0 ? "y" : `y${i + 1}`;
-
-    const gutter = 0.04;
-    const width = (1 - gutter * (nCols - 1)) / nCols;
-    const start = i * (width + gutter);
-
-    layoutAxes[`xaxis${i === 0 ? "" : i + 1}`] = {
-      domain: [start, start + width],
-      anchor: yKey,
-      title: { text: "Age at Reform" }
-    };
-    layoutAxes[`yaxis${i === 0 ? "" : i + 1}`] = {
-      anchor: xKey,
-      title: i === 0 ? { text: yAxisTitle } : "",
-      range: sharedYRange,
-      nticks: 6,
-      matches: i === 0 ? undefined : "y" // lock every facet's ticks to the first facet's
-    };
-
-    annotations.push({
-      text: FACET_LABELS[facet] || facet,
-      showarrow: false,
-      x: start + width / 2,
-      y: 1.05,
-      xref: "paper",
-      yref: "paper",
-      xanchor: "center",
-      font: { size: 13 }
-    });
-
-    scenarios.forEach(scenario => {
-      const subset = data
-        .filter(d => d.scenario_name === facet && d.investment === scenario)
-        .sort((a, b) => a.age - b.age);
-
-      traces.push({
-        x: subset.map(d => d.age),
-        y: subset.map(d => d[yField]),
-        type: "scatter",
-        mode: "lines",
-        name: scenario,
-        legendgroup: scenario,
-        showlegend: i === 0,
-        line: { color: scenarioColors[scenario] },
-        xaxis: xKey,
-        yaxis: yKey,
-        hovertemplate:
-          yField === "money"
-            ? "Monthly investment of $%{y:,.0f}<extra></extra>"
-            : "%{y:.1f}% of Monthly Earnings<extra></extra>"
-      });
-    });
-  });
-
-  const layout = {
-    ...layoutAxes,
-    annotations,
-    legend: {
-      orientation: "h",
-      x: 0.5,
-      xanchor: "center",
-      y: -0.2
-    },
-    margin: { t: 50, b: 80 },
-    showlegend: true
-  };
-
-  Plotly.newPlot(containerId, traces, layout, { responsive: true });
-}
-
 </script>
 
 </body>
