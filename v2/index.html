@@ -412,9 +412,9 @@ function renderAll() {
 
   updateOutputFields(filtered);
 
-  buildFacetedLineChart(filtered, "money", "Monthly investment", "chart1");
-  buildFacetedLineChart(filtered, "pct", "% of Monthly Earnings", "chart2");
-  buildFacetedLineChart2(filtered, "money", "Monthly investment", "chart3");
+  buildFacetedLineChart(filtered, "money", "Monthly investment", "chart1","Monthly Investment to Make Up for Lost Benefits");
+  buildFacetedLineChart(filtered, "pct", "% of Monthly Earnings", "chart2","Percent of Monthly Income to Make Up for Lost Benefits");
+  buildFacetedLineChart2(filtered, "money", "Monthly investment", "chart3","Monthly Investment to Make Up for Lost Benefits");
 }
 
 function assignScenarioColors(data) {
@@ -507,6 +507,7 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
   });
 
   const layout = {
+    title: { text: chartTitle, x: 0.05 },
     ...layoutAxes,
     annotations,
     legend: {
@@ -526,7 +527,7 @@ function buildFacetedLineChart(data, yField, yAxisTitle, containerId) {
 
 // Faceted line chart (one subplot per `investment` value),
 // equivalent to ggplot's geom_line + facet_wrap(~investment)
-function buildFacetedLineChart2(data, yField, yAxisTitle, containerId) {
+function buildFacetedLineChart2(data, yField, yAxisTitle, containerId,chartTitle) {
   if (data.length === 0) {
     Plotly.newPlot(containerId, [], { title: "No data match current filters" });
     return;
