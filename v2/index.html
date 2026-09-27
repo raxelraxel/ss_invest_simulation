@@ -260,9 +260,9 @@ function updateOutputFields(filteredData) {
     if (field === "annual_earnings_total" && val >= HOUSEHOLD_EARNINGS_CAP) {
       displayVal = "Over $250,000";
     } else if (field === "cps_pct") {
-      displayVal = `${Math.round(val * 100)}%`;
+      displayVal = val;
     } else if (typeof val === "number") {
-      displayVal = val.toLocaleString();
+      displayVal = "$" + val.toLocaleString();
     } else {
       displayVal = val;
     }
