@@ -195,9 +195,9 @@ const OUTPUT_FIELDS = {
   annual_earnings_total: "Household annual earnings",
   ame_total: "Household monthly earnings",
   cps_pct: "Income percentile",
-  base_total: "Original Social Security monthly benefits",
-  benefit_total: "New Social Security monthly benefits",
-  gap_npv: "Gap in net present value of lifetime benefits"
+  base_total: "Original household Social Security monthly benefit",
+  benefit_total: "New household benefit",
+  gap_npv: "Total lifetime benefit amount to make up in net present value"
 };
 
 const OUTPUTS_IN_SLIDER_ROW=["ame_total", "annual_earnings_total","cps_pct"]
@@ -410,9 +410,10 @@ function renderAll() {
 
   updateOutputFields(filtered);
 
-  buildFacetedChart(filtered, "money", "Monthly investment", "chart1", "Monthly Investment to Make Up for Lost Benefits", "investment", FACET_ORDER, "scenario_name", FACET_LABELS);
-  buildFacetedChart(filtered, "pct", "% of Monthly Earnings", "chart2", "Percent of Monthly Income to Make Up for Lost Benefits", "investment", FACET_ORDER, "scenario_name", FACET_LABELS);
   buildFacetedChart(filtered, "money", "Monthly investment", "chart3", "Monthly Investment to Make Up for Lost Benefits", "scenario_name", FACET_ORDER2, "investment", FACET_LABELS);
+  buildFacetedChart(filtered, "pct", "% of Monthly Earnings", "chart2", "Percent of Monthly Income to Make Up for Lost Benefits", "scenario_name", FACET_ORDER2, "investment", FACET_LABELS);
+  buildFacetedChart(filtered, "money", "Monthly investment", "chart1", "Monthly Investment to Make Up for Lost Benefits", "investment", FACET_ORDER, "scenario_name", FACET_LABELS);
+
 }
 
   // Persistent color assignment per (field, value) pair, so colors stay stable
@@ -510,7 +511,11 @@ function buildFacetedChart(data, yField, yAxisTitle, containerId, chartTitle, fa
   });
 
   const layout = {
-    title: { text: chartTitle, x: 0.05 },
+    title: {
+        text: chartTitle,
+        x: 0.5,
+        xanchor: "center"
+      },
     ...layoutAxes,
     annotations,
     legend: {
