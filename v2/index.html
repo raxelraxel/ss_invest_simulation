@@ -166,9 +166,9 @@ const SLIDER_FIELDS = ["annual_earnings", "sp_annual_earnings"];
 // Any field left out (or left blank) falls back to the first sorted value for that field.
 const DEFAULT_VALUES = {
   married: "yes",
-  retire_age: 65,
-  annual_earnings: 140029.5,
-  sp_annual_earnings: 140029.5
+  retire_age: 67,
+  annual_earnings: 90000,
+  sp_annual_earnings: 90000
 };
 
 const FIELD_LABELS = {
@@ -185,9 +185,11 @@ const FACET_LABELS = {
 };
 
 const FACET_ORDER = ["tips", "corporate", "largecap"];
-const FACET_ORDER2 = ["Benefits for 75th-89th pctile unchanged, 90th pctile and above reduced by 5%",
-                       "Benefits for 75th-89th pctile reduced by 2%, 90th pctile and above reduced by 7%",
-                       "Benefits for 75th-89th pctile reduced by 5%, 90th pctile and above reduced by 10%"];
+const FACET_ORDER2 = [
+  "Benefits for 75th-89th pctile unchanged,<br>90th pctile and above reduced by 5%",
+  "Benefits for 75th-89th pctile reduced by 2%,<br>90th pctile and above reduced by 7%",
+  "Benefits for 75th-89th pctile reduced by 5%,<br>90th pctile and above reduced by 10%"
+];
 
 const OUTPUT_FIELDS = {
   annual_earnings_total: "Household annual earnings",
